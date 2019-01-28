@@ -17,5 +17,9 @@
   <ItemGroup>
     <None Include="Motor_NTP_v2.ino" />
   </ItemGroup>
- 
+  <ItemGroup>
+    <ClInclude Include="__vm\.Motor_NTP_v2.vsarduino.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>
