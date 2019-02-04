@@ -7,11 +7,10 @@ NTP Time Server en aansturing polarisatie filter:
 */
 
 #define vers "NTP GPS Stepper V03"
-#define debug false
+#define debug true
 
 #include <SPI.h>           // needed for Arduino versions later than 0018
 #include <Ethernet.h>
-#include <EthernetUdp.h>   // UDP library from: bjoern@cs.stanford.edu 12/30/200// 
 #include <TinyGPS++.h> // toegevoegd als alternatieve gps module
 #include <SoftwareSerial.h>
 #include <Stepper.h>
@@ -30,7 +29,7 @@ static const int NTP_PACKET_SIZE = 48;
 byte packetBuffer[NTP_PACKET_SIZE]; // buffers for receiving and sending data
 EthernetUDP Udp; // An Ethernet UDP instance 
 
-EthernetServer server(23); // telnet defaults to port 23
+EthernetServer telnet(23); // telnet defaults to port 23
 boolean alreadyConnected = false; // whether or not you got a message from the client yet
 String commandString;
 
@@ -44,9 +43,9 @@ void setup() {
 
 	Ethernet.begin(mac, ip, myDns, gateway, subnet);   // start Ethernet:
 	Udp.begin(NTP_PORT);   // start UDP:
-	server.begin();   // start telnet:
+	telnet.begin();   // start telnet:
 	myStepper.setSpeed(60);   // set the stepper speed at 60 rpm:
-	Serial1.begin(4800); // start GPS module UART
+	Serial1.begin(9600); // start GPS module UART
 
 #if debug
 	Serial.begin(115200);
@@ -57,22 +56,22 @@ void setup() {
 	// Disable everything but $GPRMC
 	// Note the following sentences are for UBLOX NEO6MV2 GPS 
 
-	// Serial1.write("$PUBX,40,GLL,0,0,0,0,0,0*5C\r\n");
-	// Serial1.write("$PUBX,40,VTG,0,0,0,0,0,0*5E\r\n");
-	// Serial1.write("$PUBX,40,GSV,0,0,0,0,0,0*59\r\n");
-	// Serial1.write("$PUBX,40,GGA,0,0,0,0,0,0*5A\r\n"); 
-	// Serial1.write("$PUBX,40,GSA,0,0,0,0,0,0*4E\r\n");
+	Serial1.write("$PUBX,40,GLL,0,0,0,0,0,0*5C\r\n");
+	Serial1.write("$PUBX,40,VTG,0,0,0,0,0,0*5E\r\n");
+	Serial1.write("$PUBX,40,GSV,0,0,0,0,0,0*59\r\n");
+	Serial1.write("$PUBX,40,GGA,0,0,0,0,0,0*5A\r\n"); 
+    Serial1.write("$PUBX,40,GSA,0,0,0,0,0,0*4E\r\n");
 
 }
 
 
 void loop() {
-	EthernetClient motorclient = server.available();   // wait for a new client:
+	EthernetClient motorclient = telnet.available();   // wait for a new client:
 	if (motorclient) {                            // when the client sends the first byte, say hello:
 		if (!alreadyConnected) {
 			motorclient.flush();                      // clear input buffer
 			commandString = "";                  //clear the commandString variable
-			server.println("--> Please type your command end hit Return.....");
+			telnet.println("--> Please type your command end hit Return.....");
 			alreadyConnected = true;
 		}
 		while (motorclient.available()) {            // lees character totdat 0D ontvangen
@@ -88,13 +87,14 @@ void loop() {
 				commandString += newChar;
 			}
 		}
+		
 	}
 	int packetSize = Udp.parsePacket();   // Wait for UDP request
 	if (packetSize)
 	{
 		processNTP(packetSize);           // run NTP proces to send date-time
 	}
-	delay(20);
+	delay(3);
 }
 
 
@@ -267,14 +267,14 @@ static unsigned long int numberOfSecondsSince1900Epoch(uint16_t y, uint8_t m, ui
 void processCommand(String command)
 {
 	if (command.indexOf("+") > -1) {             // zoek naar een + in de commandstring
-		server.println("Clockwise command received");
+		telnet.println("Clockwise command received");
 		myStepper.step(stepsPerRevolution);
 		commandString = "";
 		return;
 	}
 
 	if (command.indexOf("-") > -1) {
-		server.println("Counterclockwise command received");
+		telnet.println("Counterclockwise command received");
 		myStepper.step(-stepsPerRevolution);
 		commandString = "";
 		return;
@@ -285,10 +285,10 @@ void processCommand(String command)
 }
 void instructions()
 {
-	server.println(" *****INVALID COMMAND******");
-	server.println("Valid commands are: ");
-	server.println(" + ,       This will turn the motor clockwise");
-	server.println(" - ,       This will turn the motor counterclockwise");
+	telnet.println(" *****INVALID COMMAND******");
+	telnet.println("Valid commands are: ");
+	telnet.println(" + ,       This will turn the motor clockwise");
+	telnet.println(" - ,       This will turn the motor counterclockwise");
 }
 
 static void GetGPSData(unsigned long ms) // This custom version of delay() ensures that the gps object is being "fed".
