@@ -16,7 +16,9 @@ NTP Time Server en aansturing polarisatie filter:
 #include <Stepper.h>
 
 const int stepsPerRevolution = 12;  // change this to fit the number of steps for the polarisation filter
-Stepper myStepper(stepsPerRevolution, 3, 5, 6, 7);  //  Initialiseer pins stepper 
+Stepper myStepper(stepsPerRevolution, 3, 5, 6, 7);  //  Initialiseer pins stepper
+int EnablePin1 = 14;   // aanpassing voor enable/disable van de motor !!!!
+int EnablePin2 = 15;   // digital pins op dus analog A0 en A1 
 
 byte mac[] = { 0x00, 0xAA, 0xBB, 0xCC, 0xDE, 0x02 }; // Server MAC address
 IPAddress ip(192, 168, 1, 20); // IP adres camera setup
@@ -268,14 +270,22 @@ void processCommand(String command)
 {
 	if (command.indexOf("+") > -1) {             // zoek naar een + in de commandstring
 		telnet.println("Clockwise command received");
+		digitalWrite(EnablePin1, HIGH);   // enable motor
+		digitalWrite(EnablePin2, HIGH);
 		myStepper.step(stepsPerRevolution);
+		digitalWrite(EnablePin1, LOW);    //disable motor
+		digitalWrite(EnablePin2, LOW);
 		commandString = "";
 		return;
 	}
 
 	if (command.indexOf("-") > -1) {
 		telnet.println("Counterclockwise command received");
+		digitalWrite(EnablePin1, HIGH);   // enable motor
+		digitalWrite(EnablePin2, HIGH);
 		myStepper.step(-stepsPerRevolution);
+		digitalWrite(EnablePin1, LOW);    //disable motor
+		digitalWrite(EnablePin2, LOW);
 		commandString = "";
 		return;
 	}
