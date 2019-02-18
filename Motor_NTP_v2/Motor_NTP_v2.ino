@@ -16,7 +16,9 @@ NTP Time Server en aansturing polarisatie filter:
 #include <Stepper.h>
 
 const int stepsPerRevolution = 12;  // change this to fit the number of steps for the polarisation filter
-Stepper myStepper(stepsPerRevolution, 3, 5, 6, 7);  //  Initialiseer pins stepper 
+Stepper myStepper(stepsPerRevolution, 3, 5, 6, 7);  //  Initialiseer pins stepper
+int EnablePin1 = 14;   // aanpassing voor enable/disable van de motor !!!!
+int EnablePin2 = 15;   // digital pins op dus analog A0 en A1 
 
 byte mac[] = { 0x00, 0xAA, 0xBB, 0xCC, 0xDE, 0x02 }; // Server MAC address
 IPAddress ip(192, 168, 1, 20); // IP adres camera setup
@@ -36,7 +38,7 @@ String commandString;
 TinyGPSPlus gps; // The TinyGPS++ object  toegevoegd
 SoftwareSerial Serial1(9, 8);   // Init softwareSerial rx-gps en tx-gps (Geel op 8 en blauw op 9)
 
-uint32_t timestamp, tempval;
+uint32_t timestamp, tempval, datevalid;
 
 
 void setup() {
@@ -94,7 +96,7 @@ void loop() {
 	{
 		processNTP(packetSize);           // run NTP proces to send date-time
 	}
-	delay(3);
+	delay(3);                             // kees delay
 }
 
 
@@ -164,6 +166,20 @@ void processNTP(int packetSize)
 	packetBuffer[14] = 0;
 
 	GetGPSData(1000);    // lees GPS data
+
+	// TinyGPSCustom datevalid(gps, "GPRMC", 9);      // indien geen geldige datum exit de loop
+	// if (datevalid.isValid());                      // hiermee voorkom je dat er een ongeldige datum wordt gestuurd.
+	// else
+	// {
+	//	 return;
+	// }
+
+	TinyGPSCustom datevalid(gps, "GNRMC", 9);      // indien geen geldige datum exit de loop
+	if (datevalid.isValid());                      // hiermee voorkom je dat er een ongeldige datum wordt gestuurd.
+	else
+	{
+		return;
+	}
 
 #if debug
 	Serial.print("Datum value= "); Serial.println(gps.date.value()); // Raw date in DDMMYY format (u32)
@@ -268,14 +284,22 @@ void processCommand(String command)
 {
 	if (command.indexOf("+") > -1) {             // zoek naar een + in de commandstring
 		telnet.println("Clockwise command received");
+		digitalWrite(EnablePin1, HIGH);   // enable motor
+		digitalWrite(EnablePin2, HIGH);
 		myStepper.step(stepsPerRevolution);
+		digitalWrite(EnablePin1, LOW);    //disable motor
+		digitalWrite(EnablePin2, LOW);
 		commandString = "";
 		return;
 	}
 
 	if (command.indexOf("-") > -1) {
 		telnet.println("Counterclockwise command received");
+		digitalWrite(EnablePin1, HIGH);   // enable motor
+		digitalWrite(EnablePin2, HIGH);
 		myStepper.step(-stepsPerRevolution);
+		digitalWrite(EnablePin1, LOW);    //disable motor
+		digitalWrite(EnablePin2, LOW);
 		commandString = "";
 		return;
 	}
