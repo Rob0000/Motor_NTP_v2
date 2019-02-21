@@ -7,7 +7,7 @@ NTP Time Server en aansturing polarisatie filter:
 */
 
 #define vers "NTP GPS Stepper V03"
-#define debug true
+#define debug false
 
 #include <SPI.h>           // needed for Arduino versions later than 0018
 #include <Ethernet.h>
@@ -167,15 +167,8 @@ void processNTP(int packetSize)
 
 	GetGPSData(1000);    // lees GPS data
 
-	// TinyGPSCustom datevalid(gps, "GPRMC", 9);      // indien geen geldige datum exit de loop
-	// if (datevalid.isValid());                      // hiermee voorkom je dat er een ongeldige datum wordt gestuurd.
-	// else
-	// {
-	//	 return;
-	// }
-
-	TinyGPSCustom datevalid(gps, "GNRMC", 9);      // indien geen geldige datum exit de loop
-	if (datevalid.isValid());                      // hiermee voorkom je dat er een ongeldige datum wordt gestuurd.
+	
+	if (gps.date.year() >= 2019);  // indien geen geldige datum exit de loop,hiermee voorkom je dat er een ongeldige datum wordt gestuurd.                    
 	else
 	{
 		return;
